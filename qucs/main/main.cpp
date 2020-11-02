@@ -41,7 +41,7 @@
 #include "printerwriter.h"
 #include "imagewriter.h"
 #include "schematic_lang.h"
-#include "sim/sim.h"
+#include "simulator.h"
 
 //#include "schematic.h"
 #include "module.h"

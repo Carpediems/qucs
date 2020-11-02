@@ -12,29 +12,42 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef QUCS_SIM_H__
+#ifndef QUCS_SIMULATOR_H
+#define QUCS_SIMULATOR_H
 
 #include "object.h"
 #include <assert.h>
 #include <task_element.h>
-#include <components/component.h>
 #include <iostream>
 
 #include <QTextStream>
 #include <QDebug>
 #include "object.h"
 #include "language.h"
+#include "sim/data.h"
 
 class DocumentFormat;
 class NetLang;
 class Component;
 class QucsData;
 
+// simulator controller
+struct SimCtrl{
+  virtual void statusChange() = 0;
+};
 
 // simulatorDriver maybe?
 class Simulator : public Object{
+public:
+  enum {
+    sst_killed = -2,
+    sst_error = -1,
+    sst_idle = 0,
+    sst_starting = 1,
+    sst_running = 2
+  };
 protected:
-  explicit Simulator() : _doc(nullptr) {
+  explicit Simulator() : _doc(nullptr), _status(sst_idle) {
   }
 public:
   virtual ~Simulator();
@@ -47,18 +60,43 @@ public:
 public:
   void attachDoc(QucsDoc*);
   QucsDoc const* doc() const {return _doc;}
-  virtual void run() = 0;
+  virtual void run(SimCtrl*) = 0;
+  virtual std::string errorString() const = 0;
+  virtual void kill() = 0;
+
+  int status() const{return _status;}
+
+protected:
+  void setStatus(int s){_status = s;}
 
 private:
   virtual void init() = 0;
 
 protected:
-  QucsData* data() {return _data;}
+  void setData(QucsData* d) {
+    assert(d);
+
+    QucsData::attach(d, _data_p);
+#if 0
+
+    assert(!d->attachCount());
+
+    QucsData** _data_old = _data_p;
+    *_data_p = d;
+
+    if((*_data_old)->attachCount()){
+    }else{
+      // nobody uses this.
+      delete *_data_old;
+    }
+#endif
+  }
 
 private:
-  QucsDoc* _doc;
-  QucsData* _data;
-};
+  QucsDoc* _doc; // const?
+  QucsData** _data_p;
+  int _status;
+}; // Simulator
 
 
 //obsolete?
@@ -67,7 +105,5 @@ public:
   virtual ~NetLang(){}
 };
 
-
-#define QUCS_SIM_H__
 #endif
 // vim:ts=8:sw=2:noet
